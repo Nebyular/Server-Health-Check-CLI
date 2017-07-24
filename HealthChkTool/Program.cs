@@ -7,6 +7,7 @@ using System.Net.NetworkInformation;
 using System.Net.Mail;
 using System.Threading;
 using System.Net;
+using System.Configuration;
 
 namespace HealthChkTool
 {
@@ -14,7 +15,43 @@ namespace HealthChkTool
     {
         static void Main(string[] args)
         {
-            string targetIp = "1.2.4.5";
+
+            var reader = new AppSettingsReader();
+
+            var targetIp = reader.GetValue("IpAddr", typeof(string));
+            Console.WriteLine("String setting: " + targetIp);
+            targetIp.ToString();
+
+            var dataVal = reader.GetValue("DataString", typeof(string));
+            Console.WriteLine("String setting: " + dataVal);
+           // data.ToString();
+
+            var timeout = reader.GetValue("TimeoutPeriod", typeof(int));
+            Console.WriteLine("String setting: " + timeout);
+            //Convert.ToInt32(timeout);
+
+            var fragment = reader.GetValue("DontFragment", typeof(bool));
+            Console.WriteLine("String setting: " + fragment);
+            //Convert.ToBoolean(fragment);
+
+            var thresholdVal = reader.GetValue("AlertValue", typeof(int));
+            Console.WriteLine("String setting: " + thresholdVal);
+            //threshold = Convert.ToInt32(threshold);
+            int threshold = (int)thresholdVal;
+
+            try
+            {
+               // var missingSetting = reader.GetValue("Int setting", typeof(Int32));
+            }
+            catch (InvalidOperationException e)
+            {
+                Console.WriteLine("Missing key error: " + e.Message);
+            }
+
+            Console.WriteLine("Press any key to continue");
+            //Console.ReadKey();
+
+            //string targetIp = AppSettingsReader[IPAddr];
             string icmpRslts; //maybe for logging use if this will capture values in an array
             int val = 0; //test value for loop
 
@@ -22,13 +59,15 @@ namespace HealthChkTool
 
             //Ping options -  tweak as needed
             PingOptions options = new PingOptions();
-            options.DontFragment = true;
-            string data = "12345678901234567890123456789012";
+            options.DontFragment = Convert.ToBoolean(fragment);
+            //string data = "12345678901234567890123456789012";
+            string data = (string)dataVal;
             byte[] buffer = Encoding.ASCII.GetBytes(data);
-            int timeout = 120;
+            //int timeout = 120;
 
-            while (val != 5) {
-                PingReply reply = PingSender.Send(targetIp, timeout, buffer, options);
+            while (val != threshold)
+            {
+                PingReply reply = PingSender.Send(targetIp.ToString(), Convert.ToInt32(timeout), buffer, options);
 
                 if (reply.Status == IPStatus.Success)
                 {
@@ -39,8 +78,13 @@ namespace HealthChkTool
                     Console.WriteLine("Don't fragement: {0}", reply.Options.DontFragment);
                     Console.WriteLine("Buffer size: {0}", reply.Buffer.Length);
                 }
-                else val = (++val);
-                if (val == 5)
+                else 
+                {
+                    Console.WriteLine(reply.Status);
+                    val = (++val);
+                }
+
+                if (val == threshold)
                 {
                     SmtpClient smtpClient = new SmtpClient();
                     NetworkCredential basicCredential =
@@ -73,7 +117,7 @@ namespace HealthChkTool
                         Console.ReadLine();
                     }
                 }
-                Thread.Sleep(1000); //sleep for 10 seconds so we dont spam the console and make pings without flooding.
+                Thread.Sleep(10000); //sleep for 10 seconds so we dont spam the console and make pings without flooding.
                 //NOTE - Could also use this to hold a value for user to specify the amount of time between 'tests'.
             }
 
@@ -83,8 +127,4 @@ namespace HealthChkTool
 
     //Todo. 
     //This should check an array of results and if there's an error for say... 5 times we jump out the loop and execute this lot.
-    public class Mail
-    {
-
-    }
 }
