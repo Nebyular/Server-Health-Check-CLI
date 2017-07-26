@@ -15,30 +15,59 @@ namespace HealthChkTool
     {
         static void Main(string[] args)
         {
-
+            string time = DateTime.Now.ToString();
             var reader = new AppSettingsReader();
 
             var targetIp = reader.GetValue("IpAddr", typeof(string));
-            Console.WriteLine("String setting: " + targetIp);
+            Console.WriteLine("Target server setting: " + targetIp);
             targetIp.ToString();
 
             var dataVal = reader.GetValue("DataString", typeof(string));
-            Console.WriteLine("String setting: " + dataVal);
+            Console.WriteLine("Ping packet setting: " + dataVal);
            // data.ToString();
 
             var timeout = reader.GetValue("TimeoutPeriod", typeof(int));
-            Console.WriteLine("String setting: " + timeout);
+            Console.WriteLine("Ping timeout setting: " + timeout);
             //Convert.ToInt32(timeout);
 
             var fragment = reader.GetValue("DontFragment", typeof(bool));
-            Console.WriteLine("String setting: " + fragment);
+            Console.WriteLine("Don't fragment setting: " + fragment);
             //Convert.ToBoolean(fragment);
 
             var thresholdVal = reader.GetValue("AlertValue", typeof(int));
-            Console.WriteLine("String setting: " + thresholdVal);
+            Console.WriteLine("Faliure threshold setting: " + thresholdVal);
             //threshold = Convert.ToInt32(threshold);
             int threshold = (int)thresholdVal;
 
+            var sleepVal = reader.GetValue("WaitTime", typeof(int));
+            Console.WriteLine("Ping wait time setting: " + sleepVal);
+            int sleepWait = (int)sleepVal;
+
+            var emailPort = reader.GetValue("SmtpPort", typeof(int));
+            Console.WriteLine("SMTP port setting: " + emailPort);
+            int port = (int)emailPort;
+
+            var host = reader.GetValue("SmtpHost", typeof(string));
+            Console.WriteLine("SMTP host setting: " + host);
+
+            var username = reader.GetValue("AuthUsername", typeof(string));
+            Console.WriteLine("SMTP username setting: " + username);
+
+            var userPassword = reader.GetValue("AuthUserPassword", typeof(string));
+            Console.WriteLine("SMTP password setting: " + userPassword);
+
+            var from = reader.GetValue("FromAddress", typeof(string));
+            Console.WriteLine("Email from address setting: " + from);
+
+            var toAddress = reader.GetValue("ToAddress", typeof(string));
+            Console.WriteLine("Email to setting: " + toAddress);
+
+            var subject = reader.GetValue("Subject", typeof(string));
+            Console.WriteLine("Email subject setting: " + subject);
+
+            var body = reader.GetValue("Body", typeof(string));
+            Console.WriteLine("Email body setting: " + body+"\n");
+            
             try
             {
                // var missingSetting = reader.GetValue("Int setting", typeof(Int32));
@@ -48,7 +77,7 @@ namespace HealthChkTool
                 Console.WriteLine("Missing key error: " + e.Message);
             }
 
-            Console.WriteLine("Press any key to continue");
+            Console.WriteLine("Press any key to continue\n");
             //Console.ReadKey();
 
             //string targetIp = AppSettingsReader[IPAddr];
@@ -88,36 +117,35 @@ namespace HealthChkTool
                 {
                     SmtpClient smtpClient = new SmtpClient();
                     NetworkCredential basicCredential =
-                        new NetworkCredential("jack@thesystemisdown.io", "MegurineLuka01!");
+                        new NetworkCredential(username.ToString(), userPassword.ToString());
                     MailMessage message = new MailMessage();
-                    MailAddress fromAddress = new MailAddress("alerts@thesystemisdown.io");
+                    MailAddress fromAddress = new MailAddress(from.ToString());
 
-                    smtpClient.Host = "mail.thesystemisdown.io";
+                    smtpClient.Host = host.ToString();
                     smtpClient.UseDefaultCredentials = false;
                     smtpClient.Credentials = basicCredential;
+                    smtpClient.Port = port;
 
                     message.From = fromAddress;
-                    message.Subject = "HealthChkTool Alert";
+                    message.Subject = subject.ToString();
                     //Set IsBodyHtml to true means you can send HTML email.
                     message.IsBodyHtml = true;
-                    message.Body = "<h1>HealthChkTool has reported it the server is not responding to pings and may be down.</h1>";
-                    message.To.Add("jack@thesystemisdown.io");
+                    message.Body = body.ToString();
+                    message.To.Add(toAddress.ToString());
 
                     try
                     {
                         smtpClient.Send(message);
-                        Console.WriteLine("Success");
+                        Console.WriteLine(time + ": Success!\n");
                     }
                     catch (Exception ex)
                     {
                         //Error, could not send the message
-                        Console.WriteLine(ex.Message);
-                        Console.WriteLine(ex.InnerException.Message);
-                        Console.WriteLine("Email Failed");
+                        Console.WriteLine("[ERROR] "+time+": "+ex.Message+" "+ex.InnerException.Message+". Email Failed!\n");
                         Console.ReadLine();
                     }
                 }
-                Thread.Sleep(10000); //sleep for 10 seconds so we dont spam the console and make pings without flooding.
+                Thread.Sleep(sleepWait); //sleep for 10 seconds so we dont spam the console and make pings without flooding.
                 //NOTE - Could also use this to hold a value for user to specify the amount of time between 'tests'.
             }
 
