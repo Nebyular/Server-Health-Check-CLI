@@ -1,3 +1,10 @@
+Version 0.1.0
+
+- full console functionality release
+- now uses SMTP mailing (required)
+- supports logging (log.txt)
+- user configurable settings file (app.config)
+
 Version 0.0.1
 
 - initial prototype
